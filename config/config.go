@@ -5,8 +5,24 @@ import (
 	"path/filepath"
 )
 
+var configHome string
+
+func SetConfigHome(path string) {
+	// Check if path exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// Create path
+		if err := os.MkdirAll(path, 0700); err != nil {
+			panic(err)
+		}
+	}
+	configHome = path
+}
+
 func Path(filename string) (string, error) {
-	configHome, err := os.UserConfigDir()
+	var err error
+	if configHome == "" {
+		configHome, err = os.UserConfigDir()
+	}
 	if err != nil {
 		return "", err
 	}
