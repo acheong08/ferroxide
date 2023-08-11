@@ -185,40 +185,9 @@ Commands:
 	smtp			Run hydroxide as an SMTP server
 	status			View hydroxide status
 
-Global options:
-	-debug
-		Enable debug logs
-	-api-endpoint <url>
-		ProtonMail API endpoint
-	-app-version <version>
-		ProtonMail application version
-	-smtp-host example.com
-		Allowed SMTP email hostname on which hydroxide listens, defaults to 127.0.0.1
-	-imap-host example.com
-		Allowed IMAP email hostname on which hydroxide listens, defaults to 127.0.0.1
-	-carddav-host example.com
-		Allowed SMTP email hostname on which hydroxide listens, defaults to 127.0.0.1
-	-smtp-port example.com
-		SMTP port on which hydroxide listens, defaults to 1025
-	-imap-port example.com
-		IMAP port on which hydroxide listens, defaults to 1143
-	-carddav-port example.com
-		CardDAV port on which hydroxide listens, defaults to 8080
-	-disable-imap
-		Disable IMAP for hydroxide serve
-	-disable-smtp
-		Disable SMTP for hydroxide serve
-	-disable-carddav
-		Disable CardDAV for hydroxide serve
-	-tls-cert /path/to/cert.pem
-		Path to the certificate to use for incoming connections (Optional)
-	-tls-key /path/to/key.pem
-		Path to the certificate key to use for incoming connections (Optional)
-	-tls-client-ca /path/to/ca.pem
-		If set, clients must provide a certificate signed by the given CA (Optional)
-
 Environment variables:
 	HYDROXIDE_BRIDGE_PASS	Don't prompt for the bridge password, use this variable instead
+
 `
 
 func main() {
@@ -252,6 +221,8 @@ func main() {
 
 	flag.Usage = func() {
 		fmt.Print(usage)
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
 	}
 
 	flag.Parse()
