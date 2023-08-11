@@ -242,6 +242,8 @@ func main() {
 	tlsCertKey := flag.String("tls-key", "", "Path to the certificate key to use for incoming connections")
 	tlsClientCA := flag.String("tls-client-ca", "", "If set, clients must provide a certificate signed by the given CA")
 
+	configHome := flag.String("config-home", "", "Path to the directory where hydroxide stores its configuration")
+
 	authCmd := flag.NewFlagSet("auth", flag.ExitOnError)
 	exportSecretKeysCmd := flag.NewFlagSet("export-secret-keys", flag.ExitOnError)
 	importMessagesCmd := flag.NewFlagSet("import-messages", flag.ExitOnError)
@@ -257,6 +259,10 @@ func main() {
 	tlsConfig, err := config.TLS(*tlsCert, *tlsCertKey, *tlsClientCA)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if *configHome != "" {
+		config.SetConfigHome(*configHome)
 	}
 
 	cmd := flag.Arg(0)
