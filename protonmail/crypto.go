@@ -130,7 +130,7 @@ func generateUnencryptedKey(cipher packet.CipherFunction, config *packet.Config)
 func symetricallyEncrypt(ciphertext io.Writer, symKey *packet.EncryptedKey, signer *packet.PrivateKey, hints *openpgp.FileHints, config *packet.Config) (plaintext io.WriteCloser, err error) {
 	// From https://github.com/golang/crypto/blob/master/openpgp/write.go#L172
 
-	encryptedData, err := packet.SerializeSymmetricallyEncrypted(ciphertext, symKey.CipherFunc, symKey.Key, config)
+	encryptedData, err := packet.SerializeSymmetricallyEncrypted(ciphertext, symKey.CipherFunc, false, packet.CipherSuite{}, symKey.Key, config)
 	if err != nil {
 		return nil, err
 	}

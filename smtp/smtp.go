@@ -372,9 +372,37 @@ type session struct {
 	privateKeys  openpgp.EntityList
 	addrs        []*protonmail.Address
 	allReceivers []string
+	manager      *auth.Manager
 }
 
-func (s *session) Mail(from string, options smtp.MailOptions) error {
+func (s *session) AuthPlain(username, password string) error {
+	c, privateKeys, err := s.manager.Auth(username, password)
+	if err != nil {
+		return err
+	}
+
+	u, err := c.GetCurrentUser()
+	if err != nil {
+		return err
+	}
+
+	addrs, err := c.ListAddresses()
+	if err != nil {
+		return err
+	}
+
+	// TODO: decrypt private keys in u.Addresses
+
+	s.c = c
+	s.u = u
+	s.privateKeys = privateKeys
+	s.addrs = addrs
+
+	log.Printf("%s logged in", username)
+	return nil
+}
+
+func (s *session) Mail(from string, options *smtp.MailOptions) error {
 	return nil
 }
 
@@ -405,42 +433,12 @@ func (s *session) Logout() error {
 	return nil
 }
 
-type backend struct {
-	sessions *auth.Manager
+type Backend struct {
+	Manager *auth.Manager
 }
 
-func (be *backend) Login(_ *smtp.ConnectionState, username, password string) (smtp.Session, error) {
-	c, privateKeys, err := be.sessions.Auth(username, password)
-	if err != nil {
-		return nil, err
-	}
-
-	u, err := c.GetCurrentUser()
-	if err != nil {
-		return nil, err
-	}
-
-	addrs, err := c.ListAddresses()
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: decrypt private keys in u.Addresses
-
-	log.Printf("%s logged in", username)
-
+func (b Backend) NewSession(c *smtp.Conn) (smtp.Session, error) {
 	return &session{
-		c:           c,
-		u:           u,
-		privateKeys: privateKeys,
-		addrs:       addrs,
+		manager: b.Manager,
 	}, nil
-}
-
-func (be *backend) AnonymousLogin(_ *smtp.ConnectionState) (smtp.Session, error) {
-	return nil, smtp.ErrAuthRequired
-}
-
-func New(sessions *auth.Manager) smtp.Backend {
-	return &backend{sessions}
 }

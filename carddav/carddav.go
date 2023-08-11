@@ -23,8 +23,8 @@ import (
 var errNotFound = errors.New("carddav: not found")
 
 var (
-	cleartextCardProps = []string{vcard.FieldVersion, vcard.FieldProductID, "X-PM-LABEL", "X-PM-GROUP"}
-	signedCardProps    = []string{vcard.FieldVersion, vcard.FieldProductID, vcard.FieldFormattedName, vcard.FieldUID, vcard.FieldEmail}
+	// cleartextCardProps = []string{vcard.FieldVersion, vcard.FieldProductID, "X-PM-LABEL", "X-PM-GROUP"}
+	signedCardProps = []string{vcard.FieldVersion, vcard.FieldProductID, vcard.FieldFormattedName, vcard.FieldUID, vcard.FieldEmail}
 )
 
 func formatCard(card vcard.Card, privateKey *openpgp.Entity) (*protonmail.ContactImport, error) {
@@ -388,5 +388,7 @@ func NewHandler(c *protonmail.Client, privateKeys openpgp.EntityList, events <-c
 		go b.receiveEvents(events)
 	}
 
-	return &carddav.Handler{b}
+	return &carddav.Handler{
+		Backend: b,
+	}
 }

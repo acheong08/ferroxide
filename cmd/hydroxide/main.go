@@ -76,8 +76,10 @@ func askBridgePass() (string, error) {
 }
 
 func listenAndServeSMTP(addr string, debug bool, authManager *auth.Manager, tlsConfig *tls.Config) error {
-	be := smtpbackend.New(authManager)
-	s := smtp.NewServer(be)
+	backend := smtpbackend.Backend{
+		Manager: authManager,
+	}
+	s := smtp.NewServer(backend)
 	s.Addr = addr
 	s.Domain = "localhost" // TODO: make this configurable
 	s.AllowInsecureAuth = tlsConfig == nil
