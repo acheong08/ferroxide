@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
@@ -38,13 +39,26 @@ var (
 	debug       bool
 	apiEndpoint string
 	appVersion  string
+	proxyURL    string
 )
 
 func newClient() *protonmail.Client {
+	httpClient := http.DefaultClient
+	if proxyURL != "" {
+		proxyURL, err := url.Parse(proxyURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+		httpClient.Transport = &http.Transport{
+			Proxy: http.ProxyURL(proxyURL),
+		}
+		http.DefaultTransport = httpClient.Transport
+	}
 	return &protonmail.Client{
 		RootURL:    apiEndpoint,
 		AppVersion: appVersion,
 		Debug:      debug,
+		HTTPClient: httpClient,
 	}
 }
 
@@ -212,6 +226,7 @@ func main() {
 	tlsClientCA := flag.String("tls-client-ca", "", "If set, clients must provide a certificate signed by the given CA")
 
 	configHome := flag.String("config-home", "", "Path to the directory where hydroxide stores its configuration")
+	flag.StringVar(&proxyURL, "proxy-url", "", "HTTP proxy URL (e.g. socks5://127.0.0.1:1080)")
 
 	authCmd := flag.NewFlagSet("auth", flag.ExitOnError)
 	exportSecretKeysCmd := flag.NewFlagSet("export-secret-keys", flag.ExitOnError)
