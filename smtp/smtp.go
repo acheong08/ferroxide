@@ -367,16 +367,18 @@ func SendMail(c *protonmail.Client, u *protonmail.User, privateKeys openpgp.Enti
 }
 
 type session struct {
-	c            *protonmail.Client
-	u            *protonmail.User
-	privateKeys  openpgp.EntityList
-	addrs        []*protonmail.Address
+	be *backend
+
+	c           *protonmail.Client
+	u           *protonmail.User
+	privateKeys openpgp.EntityList
+	addrs       []*protonmail.Address
+
 	allReceivers []string
-	manager      *auth.Manager
 }
 
 func (s *session) AuthPlain(username, password string) error {
-	c, privateKeys, err := s.manager.Auth(username, password)
+	c, privateKeys, err := s.be.sessions.Auth(username, password)
 	if err != nil {
 		return err
 	}
@@ -393,31 +395,36 @@ func (s *session) AuthPlain(username, password string) error {
 
 	// TODO: decrypt private keys in u.Addresses
 
+	log.Printf("%s logged in", username)
 	s.c = c
 	s.u = u
 	s.privateKeys = privateKeys
 	s.addrs = addrs
-
-	log.Printf("%s logged in", username)
 	return nil
 }
 
 func (s *session) Mail(from string, options *smtp.MailOptions) error {
+	if s.c == nil {
+		return smtp.ErrAuthRequired
+	}
 	return nil
 }
 
-func (s *session) Rcpt(to string) error {
+func (s *session) Rcpt(to string, options *smtp.RcptOptions) error {
+	if s.c == nil {
+		return smtp.ErrAuthRequired
+	}
 	if to == "" {
 		return nil
 	}
-
-	// Seems like github.com/emersion/go-smtp/conn.go:487 removes marks on message
-	// "to" is added into allReceivers blindly
 	s.allReceivers = append(s.allReceivers, to)
 	return nil
 }
 
 func (s *session) Data(r io.Reader) error {
+	if s.c == nil {
+		return smtp.ErrAuthRequired
+	}
 	return SendMail(s.c, s.u, s.privateKeys, s.addrs, s.allReceivers, r)
 }
 
@@ -426,19 +433,18 @@ func (s *session) Reset() {
 }
 
 func (s *session) Logout() error {
-	s.c = nil
-	s.u = nil
-	s.privateKeys = nil
-	s.allReceivers = nil
+	*s = session{be: s.be}
 	return nil
 }
 
-type Backend struct {
-	Manager *auth.Manager
+type backend struct {
+	sessions *auth.Manager
 }
 
-func (b Backend) NewSession(c *smtp.Conn) (smtp.Session, error) {
-	return &session{
-		manager: b.Manager,
-	}, nil
+func (be *backend) NewSession(_ *smtp.Conn) (smtp.Session, error) {
+	return &session{be: be}, nil
+}
+
+func New(sessions *auth.Manager) smtp.Backend {
+	return &backend{sessions}
 }
