@@ -12,6 +12,7 @@ require (
 	github.com/emersion/go-smtp v0.23.0
 	github.com/emersion/go-vcard v0.0.0-20241024213814-c9703dde27ff
 	github.com/emersion/go-webdav v0.6.0
+	github.com/google/uuid v1.6.0
 	go.etcd.io/bbolt v1.4.2
 	golang.org/x/crypto v0.40.0
 	golang.org/x/term v0.33.0
