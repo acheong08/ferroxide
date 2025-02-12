@@ -46,8 +46,7 @@ setup information.
 Start by installing hydroxide:
 
 ```shell
-git clone https://github.com/acheong08/ferroxide.git
-go build ./cmd/hydroxide
+go install github.com/acheong08/ferroxide/cmd/ferroxide@latest
 ```
 
 Then you'll need to login to ProtonMail via hydroxide, so that hydroxide can
