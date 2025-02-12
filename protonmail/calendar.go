@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/ProtonMail/go-crypto/openpgp"
-	"github.com/ProtonMail/go-crypto/openpgp/armor"
-	"github.com/ProtonMail/go-crypto/openpgp/packet"
-	"github.com/emersion/go-ical"
 	"io"
-	"maps"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/armor"
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
+	"github.com/acheong08/ferroxide/utils"
+	"github.com/emersion/go-ical"
 )
 
 const calendarPath = "/calendar/v1"
@@ -508,7 +509,7 @@ func makeIcal(props ical.Props, components ...*ical.Component) *ical.Calendar {
 	cal := ical.NewCalendar()
 
 	if props != nil {
-		maps.Copy(cal.Props, props)
+		utils.MapCopy(cal.Props, props)
 	}
 
 	cal.Props.SetText(ical.PropVersion, "2.0")

@@ -5,5 +5,5 @@ sources:
   - https://github.com/acheong08/ferroxide.git
 tasks:
   - build: |
-      cd hydroxide
+      cd ferroxide
       go build -v ./...

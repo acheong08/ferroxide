@@ -1,4 +1,4 @@
-module github.com/acheong08/ferroxide
+module github.com/emersion/hydroxide
 
 go 1.23.8
 
