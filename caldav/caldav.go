@@ -430,7 +430,7 @@ func (b *backend) CurrentUserPrincipal(ctx context.Context) (string, error) {
 
 func NewHandler(c *protonmail.Client, privateKeys openpgp.EntityList, username string, events <-chan *protonmail.Event) http.Handler {
 	if len(privateKeys) == 0 {
-		panic("hydroxide/caldav: no private key available")
+		panic("ferroxide/caldav: no private key available")
 	}
 
 	keyCache := map[string]openpgp.EntityList{username: privateKeys}
