@@ -14,10 +14,10 @@ import (
 	"sync"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/acheong08/ferroxide/protonmail"
 	"github.com/emersion/go-vcard"
 	"github.com/emersion/go-webdav"
 	"github.com/emersion/go-webdav/carddav"
-	"github.com/acheong08/ferroxide/protonmail"
 )
 
 // TODO: use a HTTP error
@@ -329,7 +329,7 @@ func (b *backend) PutAddressObject(ctx context.Context, path string, card vcard.
 			return nil, err
 		}
 		if len(resps) != 1 {
-			return nil, errors.New("hydroxide/carddav: expected exactly one response when creating contact")
+			return nil, errors.New("ferroxide/carddav: expected exactly one response when creating contact")
 		}
 		resp := resps[0]
 		if err := resp.Err(); err != nil {
@@ -361,7 +361,7 @@ func (b *backend) DeleteAddressObject(ctx context.Context, path string) error {
 		return err
 	}
 	if len(resps) != 1 {
-		return errors.New("hydroxide/carddav: expected exactly one response when deleting contact")
+		return errors.New("ferroxide/carddav: expected exactly one response when deleting contact")
 	}
 	resp := resps[0]
 	// TODO: decrement b.total if necessary
@@ -399,7 +399,7 @@ func (b *backend) receiveEvents(events <-chan *protonmail.Event) {
 
 func NewHandler(c *protonmail.Client, privateKeys openpgp.EntityList, events <-chan *protonmail.Event) http.Handler {
 	if len(privateKeys) == 0 {
-		panic("hydroxide/carddav: no private key available")
+		panic("ferroxide/carddav: no private key available")
 	}
 
 	b := &backend{
