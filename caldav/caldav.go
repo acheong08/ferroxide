@@ -8,7 +8,7 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/emersion/go-ical"
 	"github.com/emersion/go-webdav/caldav"
-	"github.com/emersion/hydroxide/protonmail"
+	"github.com/acheong08/ferroxide/protonmail"
 	"io"
 	"maps"
 	"net/http"

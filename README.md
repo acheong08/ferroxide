@@ -1,4 +1,13 @@
-# hydroxide
+# Ferroxide
+
+A community fork of [emersion/hydroxide](https://github.com/emersion/hydroxide)
+
+Primary changes:
+- Caldav
+- Tor and proxies
+- Custom config directory
+
+# Original Hydroxide ReadMe
 
 A third-party, open-source ProtonMail bridge. For power users only, designed to
 run on a server.
@@ -37,7 +46,7 @@ setup information.
 Start by installing hydroxide:
 
 ```shell
-git clone https://github.com/emersion/hydroxide.git
+git clone https://github.com/acheong08/ferroxide.git
 go build ./cmd/hydroxide
 ```
 
