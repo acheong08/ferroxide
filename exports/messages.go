@@ -15,7 +15,7 @@ import (
 	"github.com/acheong08/ferroxide/protonmail"
 )
 
-func writeMessage(c *protonmail.Client, privateKeys openpgp.KeyRing, w io.Writer, msg *protonmail.Message) error {
+func writeMessage(_ *protonmail.Client, privateKeys openpgp.KeyRing, w io.Writer, msg *protonmail.Message) error {
 	mimeType := msg.MIMEType
 	if mimeType == "" {
 		mimeType = "text/html"

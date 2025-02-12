@@ -5,16 +5,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ProtonMail/go-crypto/openpgp"
-	"github.com/emersion/go-ical"
-	"github.com/emersion/go-webdav/caldav"
-	"github.com/acheong08/ferroxide/protonmail"
 	"io"
-	"maps"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/acheong08/ferroxide/protonmail"
+	"github.com/acheong08/ferroxide/utils"
+	"github.com/emersion/go-ical"
+	"github.com/emersion/go-webdav/caldav"
 )
 
 type backend struct {
@@ -79,7 +80,7 @@ func toIcalCalendar(event *protonmail.CalendarEvent, userKr openpgp.KeyRing, cal
 		if propsMap, err := readEventCard(merged, card, userKr, calKr, event.SharedKeyPacket); err != nil {
 			return nil, fmt.Errorf("caldav/toIcalCalendar: error reading shared event card: (%w)", err)
 		} else {
-			for name, _ := range propsMap {
+			for name := range propsMap {
 				calProps.Set(propsMap.Get(name))
 			}
 		}
@@ -89,7 +90,7 @@ func toIcalCalendar(event *protonmail.CalendarEvent, userKr openpgp.KeyRing, cal
 		if propsMap, err := readEventCard(merged, card, userKr, calKr, event.CalendarKeyPacket); err != nil {
 			return nil, fmt.Errorf("caldav/toIcalCalendar: error reading calendar event card: (%w)", err)
 		} else {
-			for name, _ := range propsMap {
+			for name := range propsMap {
 				calProps.Set(propsMap.Get(name))
 			}
 		}
@@ -111,7 +112,7 @@ func toIcalCalendar(event *protonmail.CalendarEvent, userKr openpgp.KeyRing, cal
 	cal := ical.NewCalendar()
 
 	if calProps != nil {
-		maps.Copy(cal.Props, calProps)
+		utils.MapCopy(cal.Props, calProps)
 	}
 	cal.Children = append(cal.Children, merged.Component)
 
@@ -430,7 +431,7 @@ func (b *backend) CurrentUserPrincipal(ctx context.Context) (string, error) {
 
 func NewHandler(c *protonmail.Client, privateKeys openpgp.EntityList, username string, events <-chan *protonmail.Event) http.Handler {
 	if len(privateKeys) == 0 {
-		panic("hydroxide/caldav: no private key available")
+		panic("ferroxide/caldav: no private key available")
 	}
 
 	keyCache := map[string]openpgp.EntityList{username: privateKeys}
