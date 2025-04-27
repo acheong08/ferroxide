@@ -1,6 +1,8 @@
 module github.com/acheong08/ferroxide
 
-go 1.23.8
+go 1.23.0
+
+toolchain go1.24.2
 
 require (
 	github.com/ProtonMail/go-crypto v1.3.0
@@ -11,7 +13,6 @@ require (
 	github.com/emersion/go-message v0.18.2
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.23.0
-	github.com/emersion/go-vcard v0.0.0-20241024213814-c9703dde27ff
 	github.com/emersion/go-webdav v0.6.0
 	go.etcd.io/bbolt v1.4.2
 	golang.org/x/crypto v0.40.0
