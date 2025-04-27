@@ -29,6 +29,11 @@ func (b *backend) receiveEvents(events <-chan *protonmail.Event) {
 	// TODO
 }
 
+func (b *backend) CreateCalendar(ctx context.Context, calendar *caldav.Calendar) error {
+	// TODO: CreateCalendar
+	return errors.ErrUnsupported
+}
+
 func readEventCard(event *ical.Event, eventCard protonmail.CalendarEventCard, userKr openpgp.KeyRing, calKr openpgp.KeyRing, keyPacket string) (ical.Props, error) {
 	md, err := eventCard.Read(userKr, calKr, keyPacket)
 	if err != nil {
@@ -111,9 +116,7 @@ func toIcalCalendar(event *protonmail.CalendarEvent, userKr openpgp.KeyRing, cal
 
 	cal := ical.NewCalendar()
 
-	if calProps != nil {
-		utils.MapCopy(cal.Props, calProps)
-	}
+	utils.MapCopy(cal.Props, calProps)
 	cal.Children = append(cal.Children, merged.Component)
 
 	return cal, nil
@@ -369,12 +372,12 @@ func (b *backend) QueryCalendarObjects(ctx context.Context, path string, query *
 	return cos, nil
 }
 
-func (b *backend) PutCalendarObject(ctx context.Context, path string, calendar *ical.Calendar, opts *caldav.PutCalendarObjectOptions) (loc string, err error) {
+func (b *backend) PutCalendarObject(ctx context.Context, path string, calendar *ical.Calendar, opts *caldav.PutCalendarObjectOptions) (loc *caldav.CalendarObject, err error) {
 	//TODO: maybe impl opts?
 	//TODO: attendees maybe
 	homeSetPath, err := b.CalendarHomeSetPath(nil)
 	if err != nil {
-		return "", fmt.Errorf("caldav/PutCalendarObject: error getting calendar home set path: (%w)", err)
+		return nil, fmt.Errorf("caldav/PutCalendarObject: error getting calendar home set path: (%w)", err)
 	}
 
 	calEvtId, _ := strings.CutSuffix(path, "/")
@@ -382,24 +385,29 @@ func (b *backend) PutCalendarObject(ctx context.Context, path string, calendar *
 	calEvtId, _ = strings.CutPrefix(calEvtId, homeSetPath)
 	splitIds := strings.Split(calEvtId, "/")
 	if len(splitIds) < 2 {
-		return "", fmt.Errorf("caldav/PutCalendarObject: bad path %s", path)
+		return nil, fmt.Errorf("caldav/PutCalendarObject: bad path %s", path)
 	}
 
 	calId, evtId := splitIds[0], splitIds[1]
 
 	events := calendar.Events()
 	if len(events) != 1 {
-		return "", fmt.Errorf("caldav/PutCalendarObject: expected PUT VCALENDAR to have exactly one VEVENT")
+		return nil, fmt.Errorf("caldav/PutCalendarObject: expected PUT VCALENDAR to have exactly one VEVENT")
 	}
 	event := events[0]
 
 	newEvent, err := b.c.UpdateCalendarEvent(calId, evtId, event, b.privateKeys)
 	if err != nil {
-		return "", fmt.Errorf("caldav/PutCalendarObject: error updating calendar event (calId: %s, evtId: %s): (%w)", calId, evtId, err)
+		return nil, fmt.Errorf("caldav/PutCalendarObject: error updating calendar event (calId: %s, evtId: %s): (%w)", calId, evtId, err)
 	}
 
 	path = homeSetPath + calId + formatCalendarObjectPath(newEvent.ID)
-	return path, nil
+
+	return &caldav.CalendarObject{
+		Path:    path,
+		ModTime: newEvent.ModifyTime.Time(),
+		Data:    calendar,
+	}, nil
 }
 
 func (b *backend) DeleteCalendarObject(ctx context.Context, path string) error {
