@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"path"
 	"strconv"
@@ -14,9 +13,9 @@ import (
 	"sync"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/acheong08/ferroxide/protonmail"
 	"github.com/emersion/go-vcard"
 	"github.com/emersion/go-webdav/carddav"
-	"github.com/acheong08/ferroxide/protonmail"
 )
 
 // TODO: use a HTTP error
@@ -111,7 +110,7 @@ func (b *backend) toAddressObject(contact *protonmail.Contact, req *carddav.Addr
 
 		// The signature can be checked only if md.UnverifiedBody is consumed until
 		// EOF
-		io.Copy(ioutil.Discard, md.UnverifiedBody)
+		io.Copy(io.Discard, md.UnverifiedBody)
 		if err := md.SignatureError; err != nil {
 			return nil, err
 		}
@@ -140,11 +139,25 @@ type backend struct {
 	privateKeys openpgp.EntityList
 }
 
+// TODO: Implement address books
+func (b *backend) CreateAddressBook(ctx context.Context, addressBook *carddav.AddressBook) error {
+	return errors.ErrUnsupported
+}
+func (b *backend) DeleteAddressBook(ctx context.Context, addressBook string) error {
+	return errors.ErrUnsupported
+}
+func (b *backend) GetAddressBook(ctx context.Context, addressBook string) (*carddav.AddressBook, error) {
+	return nil, errors.ErrUnsupported
+}
+func (b *backend) ListAddressBooks(ctx context.Context) ([]carddav.AddressBook, error) {
+	return nil, errors.ErrUnsupported
+}
+
 func (b *backend) CurrentUserPrincipal(ctx context.Context) (string, error) {
 	return "/", nil
 }
 
-func (b *backend) AddressbookHomeSetPath(ctx context.Context) (string, error) {
+func (b *backend) AddressBookHomeSetPath(ctx context.Context) (string, error) {
 	return "/contacts", nil
 }
 
@@ -206,7 +219,7 @@ func (b *backend) GetAddressObject(ctx context.Context, path string, req *cardda
 	return b.toAddressObject(contact, req)
 }
 
-func (b *backend) ListAddressObjects(ctx context.Context, req *carddav.AddressDataRequest) ([]carddav.AddressObject, error) {
+func (b *backend) ListAddressObjects(ctx context.Context, path string, req *carddav.AddressDataRequest) ([]carddav.AddressObject, error) {
 	if b.cacheComplete() {
 		b.locker.Lock()
 		defer b.locker.Unlock()
@@ -271,14 +284,14 @@ func (b *backend) ListAddressObjects(ctx context.Context, req *carddav.AddressDa
 	return aos, nil
 }
 
-func (b *backend) QueryAddressObjects(ctx context.Context, query *carddav.AddressBookQuery) ([]carddav.AddressObject, error) {
+func (b *backend) QueryAddressObjects(ctx context.Context, path string, query *carddav.AddressBookQuery) ([]carddav.AddressObject, error) {
 	req := carddav.AddressDataRequest{AllProp: true}
 	if query != nil {
 		req = query.DataRequest
 	}
 
 	// TODO: optimize
-	all, err := b.ListAddressObjects(ctx, &req)
+	all, err := b.ListAddressObjects(ctx, "", &req)
 	if err != nil {
 		return nil, err
 	}
@@ -286,15 +299,15 @@ func (b *backend) QueryAddressObjects(ctx context.Context, query *carddav.Addres
 	return carddav.Filter(query, all)
 }
 
-func (b *backend) PutAddressObject(ctx context.Context, path string, card vcard.Card, opts *carddav.PutAddressObjectOptions) (loc string, err error) {
+func (b *backend) PutAddressObject(ctx context.Context, path string, card vcard.Card, opts *carddav.PutAddressObjectOptions) (loc *carddav.AddressObject, err error) {
 	id, err := parseAddressObjectPath(path)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	contactImport, err := formatCard(card, b.privateKeys[0])
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var contact *protonmail.Contact
@@ -303,19 +316,19 @@ func (b *backend) PutAddressObject(ctx context.Context, path string, card vcard.
 	if _, getErr := b.GetAddressObject(ctx, path, &req); getErr == nil {
 		contact, err = b.c.UpdateContact(id, contactImport)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	} else {
 		resps, err := b.c.CreateContacts([]*protonmail.ContactImport{contactImport})
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		if len(resps) != 1 {
-			return "", errors.New("ferroxide/carddav: expected exactly one response when creating contact")
+			return nil, errors.New("ferroxide/carddav: expected exactly one response when creating contact")
 		}
 		resp := resps[0]
 		if err := resp.Err(); err != nil {
-			return "", err
+			return nil, err
 		}
 		contact = resp.Response.Contact
 	}
@@ -323,7 +336,10 @@ func (b *backend) PutAddressObject(ctx context.Context, path string, card vcard.
 
 	// TODO: increment b.total if necessary
 	b.putCache(contact)
-	return formatAddressObjectPath(contact.ID), nil
+
+	return &carddav.AddressObject{
+		Path: formatAddressObjectPath(contact.ID),
+	}, nil
 }
 
 func (b *backend) DeleteAddressObject(ctx context.Context, path string) error {
