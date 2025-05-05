@@ -6,7 +6,6 @@ toolchain go1.24.2
 
 require (
 	github.com/ProtonMail/go-crypto v1.2.0
-	github.com/boltdb/bolt v1.3.1
 	github.com/emersion/go-bcrypt v0.0.0-20170822072041-6e724a1baa63
 	github.com/emersion/go-ical v0.0.0-20240127095438-fc1c9d8fb2b6
 	github.com/emersion/go-imap v1.2.1
@@ -17,6 +16,7 @@ require (
 	github.com/emersion/go-vcard v0.0.0-20241024213814-c9703dde27ff
 	github.com/emersion/go-webdav v0.6.0
 	github.com/google/uuid v1.6.0
+	go.etcd.io/bbolt v1.4.0
 	golang.org/x/crypto v0.37.0
 	golang.org/x/term v0.31.0
 )
