@@ -593,7 +593,7 @@ func main() {
 		eventsManager := events.NewManager()
 		log.Fatal(listenAndServeCalDAV(addr, authManager, eventsManager, tlsConfig))
 	case "carddav":
-		addr := *caldavHost + ":" + *caldavPort
+		addr := *carddavHost + ":" + *carddavPort
 		authManager := auth.NewManager(newClient)
 		eventsManager := events.NewManager()
 		log.Fatal(listenAndServeCardDAV(addr, authManager, eventsManager, tlsConfig))
