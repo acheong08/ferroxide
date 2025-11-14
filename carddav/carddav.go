@@ -15,10 +15,7 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/acheong08/ferroxide/protonmail"
 	"github.com/emersion/go-vcard"
-<<<<<<< HEAD
 	"github.com/emersion/go-webdav"
-=======
->>>>>>> e4bd477 (caldav/cardav: Bump go-webdav dependency)
 	"github.com/emersion/go-webdav/carddav"
 )
 
@@ -148,20 +145,6 @@ type backend struct {
 	locker      sync.Mutex
 	total       int
 	privateKeys openpgp.EntityList
-}
-
-// TODO: Implement address books
-func (b *backend) CreateAddressBook(ctx context.Context, addressBook *carddav.AddressBook) error {
-	return errors.ErrUnsupported
-}
-func (b *backend) DeleteAddressBook(ctx context.Context, addressBook string) error {
-	return errors.ErrUnsupported
-}
-func (b *backend) GetAddressBook(ctx context.Context, addressBook string) (*carddav.AddressBook, error) {
-	return nil, errors.ErrUnsupported
-}
-func (b *backend) ListAddressBooks(ctx context.Context) ([]carddav.AddressBook, error) {
-	return nil, errors.ErrUnsupported
 }
 
 func (b *backend) CurrentUserPrincipal(ctx context.Context) (string, error) {
@@ -312,11 +295,7 @@ func (b *backend) QueryAddressObjects(ctx context.Context, path string, query *c
 	}
 
 	// TODO: optimize
-<<<<<<< HEAD
 	all, err := b.ListAddressObjects(ctx, addressBook.Path, &req)
-=======
-	all, err := b.ListAddressObjects(ctx, "", &req)
->>>>>>> e4bd477 (caldav/cardav: Bump go-webdav dependency)
 	if err != nil {
 		return nil, err
 	}
@@ -324,11 +303,7 @@ func (b *backend) QueryAddressObjects(ctx context.Context, path string, query *c
 	return carddav.Filter(query, all)
 }
 
-<<<<<<< HEAD
 func (b *backend) PutAddressObject(ctx context.Context, path string, card vcard.Card, opts *carddav.PutAddressObjectOptions) (ao *carddav.AddressObject, err error) {
-=======
-func (b *backend) PutAddressObject(ctx context.Context, path string, card vcard.Card, opts *carddav.PutAddressObjectOptions) (loc *carddav.AddressObject, err error) {
->>>>>>> e4bd477 (caldav/cardav: Bump go-webdav dependency)
 	id, err := parseAddressObjectPath(path)
 	if err != nil {
 		return nil, err
@@ -367,15 +342,11 @@ func (b *backend) PutAddressObject(ctx context.Context, path string, card vcard.
 	b.putCache(contact)
 
 	return &carddav.AddressObject{
-<<<<<<< HEAD
 		Path:    formatAddressObjectPath(contact.ID),
 		ModTime: contact.ModifyTime.Time(),
 		// TODO: stronger ETag
 		ETag: fmt.Sprintf("%x%x", contact.ModifyTime, contact.Size),
 		Card: card,
-=======
-		Path: formatAddressObjectPath(contact.ID),
->>>>>>> e4bd477 (caldav/cardav: Bump go-webdav dependency)
 	}, nil
 }
 
