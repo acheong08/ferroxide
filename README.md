@@ -1,9 +1,9 @@
-# hydroxide
+# ferroxide
 
 A third-party, open-source ProtonMail bridge. For power users only, designed to
 run on a server.
 
-hydroxide supports CardDAV, IMAP and SMTP.
+ferroxide supports CardDAV, IMAP and SMTP.
 
 Rationale:
 
@@ -15,13 +15,13 @@ Feel free to join the IRC channel: #emersion on Libera Chat.
 
 ## How does it work?
 
-hydroxide is a server that translates standard protocols (SMTP, IMAP, CardDAV)
+ferroxide is a server that translates standard protocols (SMTP, IMAP, CardDAV)
 into ProtonMail API requests. It allows you to use your preferred e-mail clients
 and `git-send-email` with ProtonMail.
 
     +-----------------+             +-------------+  ProtonMail  +--------------+
     |                 | IMAP, SMTP  |             |     API      |              |
-    |  E-mail client  <------------->  hydroxide  <-------------->  ProtonMail  |
+    |  E-mail client  <------------->  ferroxide  <-------------->  ProtonMail  |
     |                 |             |             |              |              |
     +-----------------+             +-------------+              +--------------+
 
@@ -29,27 +29,27 @@ and `git-send-email` with ProtonMail.
 
 ### Go
 
-hydroxide is implemented in Go. Head to [Go website](https://golang.org) for
+ferroxide is implemented in Go. Head to [Go website](https://golang.org) for
 setup information.
 
 ### Installing
 
-Start by installing hydroxide:
+Start by installing ferroxide:
 
 ```shell
-git clone https://github.com/emersion/hydroxide.git
-go build ./cmd/hydroxide
+git clone https://github.com/acheong08/ferroxide.git
+go build ./cmd/ferroxide
 ```
 
-Then you'll need to login to ProtonMail via hydroxide, so that hydroxide can
+Then you'll need to login to ProtonMail via ferroxide, so that ferroxide can
 retrieve e-mails from ProtonMail. You can do so with this command:
 
 ```shell
-hydroxide auth <username>
+ferroxide auth <username>
 ```
 
 Once you're logged in, a "bridge password" will be printed. Don't close your
-terminal yet, as this password is not stored anywhere by hydroxide and will be
+terminal yet, as this password is not stored anywhere by ferroxide and will be
 needed when configuring your e-mail client.
 
 Your ProtonMail credentials are stored on disk encrypted with this bridge
@@ -57,17 +57,17 @@ password (a 32-byte random password generated when logging in).
 
 ## Usage
 
-hydroxide can be used in multiple modes.
+ferroxide can be used in multiple modes.
 
-> Don't start hydroxide multiple times, instead you can use `hydroxide serve`.
+> Don't start ferroxide multiple times, instead you can use `ferroxide serve`.
 > This requires ports 1025 (smtp), 1143 (imap), and 8080 (carddav).
 
 ### SMTP
 
-To run hydroxide as an SMTP server:
+To run ferroxide as an SMTP server:
 
 ```shell
-hydroxide smtp
+ferroxide smtp
 ```
 
 Once the bridge is started, you can configure your e-mail client with the
@@ -81,10 +81,10 @@ following settings:
 
 ### CardDAV
 
-You must setup an HTTPS reverse proxy to forward requests to `hydroxide`.
+You must setup an HTTPS reverse proxy to forward requests to `ferroxide`.
 
 ```shell
-hydroxide carddav
+ferroxide carddav
 ```
 
 Tested on GNOME (Evolution) and Android (DAVDroid).
@@ -96,7 +96,7 @@ Tested on GNOME (Evolution) and Android (DAVDroid).
 For now, it only supports unencrypted local connections.
 
 ```shell
-hydroxide imap
+ferroxide imap
 ```
 
 ## License

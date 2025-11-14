@@ -20,15 +20,15 @@ import (
 	"github.com/emersion/go-smtp"
 	"golang.org/x/term"
 
-	"github.com/emersion/hydroxide/auth"
-	"github.com/emersion/hydroxide/carddav"
-	"github.com/emersion/hydroxide/config"
-	"github.com/emersion/hydroxide/events"
-	"github.com/emersion/hydroxide/exports"
-	imapbackend "github.com/emersion/hydroxide/imap"
-	"github.com/emersion/hydroxide/imports"
-	"github.com/emersion/hydroxide/protonmail"
-	smtpbackend "github.com/emersion/hydroxide/smtp"
+	"github.com/acheong08/ferroxide/auth"
+	"github.com/acheong08/ferroxide/carddav"
+	"github.com/acheong08/ferroxide/config"
+	"github.com/acheong08/ferroxide/events"
+	"github.com/acheong08/ferroxide/exports"
+	imapbackend "github.com/acheong08/ferroxide/imap"
+	"github.com/acheong08/ferroxide/imports"
+	"github.com/acheong08/ferroxide/protonmail"
+	smtpbackend "github.com/acheong08/ferroxide/smtp"
 	"github.com/google/uuid"
 )
 
@@ -60,7 +60,7 @@ func makeHTTPClientFromProxy(proxyArg string) (*http.Client, error) {
 		if strings.HasPrefix(proxyArg, "socks5://") {
 			proxyArg = strings.Replace(proxyArg, "socks5://", "", 1)
 		}
-		fmtProxy = fmt.Sprintf("socks5://hydroxide_%s::@%s", un, proxyArg)
+		fmtProxy = fmt.Sprintf("socks5://ferroxide_%s::@%s", un, proxyArg)
 
 	} else {
 		if !strings.Contains(proxyArg, "://") {
@@ -224,18 +224,18 @@ func isMbox(br *bufio.Reader) (bool, error) {
 	return bytes.Equal(b, prefix), nil
 }
 
-const usage = `usage: hydroxide [options...] <command>
+const usage = `usage: ferroxide [options...] <command>
 Commands:
-	auth <username>		Login to ProtonMail via hydroxide
-	carddav			Run hydroxide as a CardDAV server
+	auth <username>		Login to ProtonMail via ferroxide
+	carddav			Run ferroxide as a CardDAV server
 	export-secret-keys <username> Export secret keys
-	imap			Run hydroxide as an IMAP server
+	imap			Run ferroxide as an IMAP server
 	import-messages <username> [file]	Import messages
 	export-messages [options...] <username>	Export messages
 	sendmail <username> -- <args...>	sendmail(1) interface
 	serve			Run all servers
-	smtp			Run hydroxide as an SMTP server
-	status			View hydroxide status
+	smtp			Run ferroxide as an SMTP server
+	status			View ferroxide status
 
 Environment variables:
 	HYDROXIDE_BRIDGE_PASS	Don't prompt for the bridge password, use this variable instead
@@ -247,23 +247,23 @@ func main() {
 	flag.StringVar(&apiEndpoint, "api-endpoint", defaultAPIEndpoint, "ProtonMail API endpoint")
 	flag.StringVar(&appVersion, "app-version", defaultAppVersion, "ProtonMail app version")
 
-	smtpHost := flag.String("smtp-host", "127.0.0.1", "Allowed SMTP email hostname on which hydroxide listens, defaults to 127.0.0.1")
-	smtpPort := flag.String("smtp-port", "1025", "SMTP port on which hydroxide listens, defaults to 1025")
-	disableSMTP := flag.Bool("disable-smtp", false, "Disable SMTP for hydroxide serve")
+	smtpHost := flag.String("smtp-host", "127.0.0.1", "Allowed SMTP email hostname on which ferroxide listens, defaults to 127.0.0.1")
+	smtpPort := flag.String("smtp-port", "1025", "SMTP port on which ferroxide listens, defaults to 1025")
+	disableSMTP := flag.Bool("disable-smtp", false, "Disable SMTP for ferroxide serve")
 
-	imapHost := flag.String("imap-host", "127.0.0.1", "Allowed IMAP email hostname on which hydroxide listens, defaults to 127.0.0.1")
-	imapPort := flag.String("imap-port", "1143", "IMAP port on which hydroxide listens, defaults to 1143")
-	disableIMAP := flag.Bool("disable-imap", false, "Disable IMAP for hydroxide serve")
+	imapHost := flag.String("imap-host", "127.0.0.1", "Allowed IMAP email hostname on which ferroxide listens, defaults to 127.0.0.1")
+	imapPort := flag.String("imap-port", "1143", "IMAP port on which ferroxide listens, defaults to 1143")
+	disableIMAP := flag.Bool("disable-imap", false, "Disable IMAP for ferroxide serve")
 
-	carddavHost := flag.String("carddav-host", "127.0.0.1", "Allowed CardDAV email hostname on which hydroxide listens, defaults to 127.0.0.1")
-	carddavPort := flag.String("carddav-port", "8080", "CardDAV port on which hydroxide listens, defaults to 8080")
-	disableCardDAV := flag.Bool("disable-carddav", false, "Disable CardDAV for hydroxide serve")
+	carddavHost := flag.String("carddav-host", "127.0.0.1", "Allowed CardDAV email hostname on which ferroxide listens, defaults to 127.0.0.1")
+	carddavPort := flag.String("carddav-port", "8080", "CardDAV port on which ferroxide listens, defaults to 8080")
+	disableCardDAV := flag.Bool("disable-carddav", false, "Disable CardDAV for ferroxide serve")
 
 	tlsCert := flag.String("tls-cert", "", "Path to the certificate to use for incoming connections")
 	tlsCertKey := flag.String("tls-key", "", "Path to the certificate key to use for incoming connections")
 	tlsClientCA := flag.String("tls-client-ca", "", "If set, clients must provide a certificate signed by the given CA")
 
-	configHome := flag.String("config-home", "", "Path to the directory where hydroxide stores its configuration")
+	configHome := flag.String("config-home", "", "Path to the directory where ferroxide stores its configuration")
 	flag.StringVar(&proxyURL, "proxy-url", "", "HTTP proxy URL (e.g. socks5://127.0.0.1:1080)")
 	flag.BoolVar(&tor, "tor", false, "If set, connect to ProtonMail over Tor")
 
@@ -305,7 +305,7 @@ func main() {
 		authCmd.Parse(flag.Args()[1:])
 		username := authCmd.Arg(0)
 		if username == "" {
-			log.Fatal("usage: hydroxide auth <username>")
+			log.Fatal("usage: ferroxide auth <username>")
 		}
 
 		c := newClient()
@@ -416,7 +416,7 @@ func main() {
 		exportSecretKeysCmd.Parse(flag.Args()[1:])
 		username := exportSecretKeysCmd.Arg(0)
 		if username == "" {
-			log.Fatal("usage: hydroxide export-secret-keys <username>")
+			log.Fatal("usage: ferroxide export-secret-keys <username>")
 		}
 
 		bridgePassword, err := askBridgePass()
@@ -448,7 +448,7 @@ func main() {
 		username := importMessagesCmd.Arg(0)
 		archivePath := importMessagesCmd.Arg(1)
 		if username == "" {
-			log.Fatal("usage: hydroxide import-messages <username> [file]")
+			log.Fatal("usage: ferroxide import-messages <username> [file]")
 		}
 
 		f := os.Stdin
@@ -499,7 +499,7 @@ func main() {
 		exportMessagesCmd.Parse(flag.Args()[1:])
 		username := exportMessagesCmd.Arg(0)
 		if (convID == "" && msgID == "") || username == "" {
-			log.Fatal("usage: hydroxide export-messages [-conversation-id <id>] [-message-id <id>] <username>")
+			log.Fatal("usage: ferroxide export-messages [-conversation-id <id>] [-message-id <id>] <username>")
 		}
 
 		bridgePassword, err := askBridgePass()
@@ -570,7 +570,7 @@ func main() {
 	case "sendmail":
 		username := flag.Arg(1)
 		if username == "" || flag.Arg(2) != "--" {
-			log.Fatal("usage: hydroxide sendmail <username> -- <args...>")
+			log.Fatal("usage: ferroxide sendmail <username> -- <args...>")
 		}
 
 		// TODO: other sendmail flags

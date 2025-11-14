@@ -13,8 +13,8 @@ import (
 	"github.com/emersion/go-message/mail"
 	"github.com/emersion/go-smtp"
 
-	"github.com/emersion/hydroxide/auth"
-	"github.com/emersion/hydroxide/protonmail"
+	"github.com/acheong08/ferroxide/auth"
+	"github.com/acheong08/ferroxide/protonmail"
 )
 
 func toPMAddressList(addresses []*mail.Address) []*protonmail.MessageAddress {
