@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
+	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/nacl/secretbox"
 
@@ -165,6 +166,14 @@ func GeneratePassword() (secretKey *[32]byte, password string, err error) {
 	}
 	password = base64.StdEncoding.EncodeToString(key[:])
 	return &key, password, nil
+}
+
+func DeriveKey(password string) *[32]byte {
+	salt := []byte("ferroxide-bridge-key-derivation")
+	key := argon2.IDKey([]byte(password), salt, 1, 64*1024, 4, 32)
+	var result [32]byte
+	copy(result[:], key)
+	return &result
 }
 
 type session struct {

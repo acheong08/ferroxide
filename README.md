@@ -3,6 +3,7 @@
 A community fork of [emersion/ferroxide](https://github.com/emersion/ferroxide)
 
 Primary changes:
+
 - Caldav
 - Tor and proxies
 - Custom config directory
@@ -16,9 +17,9 @@ ferroxide supports CardDAV, CalDAV, IMAP and SMTP.
 
 Rationale:
 
-* No GUI, only a CLI (so it runs in headless environments)
-* Standard-compliant (we don't care about Microsoft Outlook)
-* Fully open-source
+- No GUI, only a CLI (so it runs in headless environments)
+- Standard-compliant (we don't care about Microsoft Outlook)
+- Fully open-source
 
 Feel free to join the IRC channel: #emersion on Libera Chat.
 
@@ -81,11 +82,11 @@ ferroxide smtp
 Once the bridge is started, you can configure your e-mail client with the
 following settings:
 
-* Hostname: `localhost`
-* Port: 1025
-* Security: none
-* Username: your ProtonMail username
-* Password: the bridge password (not your ProtonMail password)
+- Hostname: `localhost`
+- Port: 1025
+- Security: none
+- Username: your ProtonMail username
+- Password: the bridge password (not your ProtonMail password)
 
 ### CardDAV
 
@@ -107,13 +108,32 @@ Tested on GNOME (Evolution), Thunderbird, KOrganizer.
 
 ### IMAP
 
-⚠️  **Warning**: IMAP support is work-in-progress. Here be dragons.
+⚠️ **Warning**: IMAP support is work-in-progress. Here be dragons.
 
 For now, it only supports unencrypted local connections.
 
 ```shell
 ferroxide imap
 ```
+
+## Headless/Non-Interactive Usage
+
+For running on servers without user interaction:
+
+```shell
+export FERROXIDE_PASS="your_protonmail_password"
+export FERROXIDE_2FA="123456"  # Current TOTP code
+export FERROXIDE_BRIDGE_PASS="your_custom_bridge_password"
+ferroxide auth your@email.com
+```
+
+### Security Warning ⚠️
+
+Using environment variables for authentication reduces security:
+
+For example, credentials may be visible in process listings (`/proc/<pid>/environ`)
+
+**Note:** Two-password mode ProtonMail accounts are not supported for headless authentication. These accounts require interactive authentication.
 
 ## License
 

@@ -120,8 +120,18 @@ func askPass(prompt string) ([]byte, error) {
 	return b, err
 }
 
-func askBridgePass() (string, error) {
+func getBridgePassEnv() string {
+	if v := os.Getenv("FERROXIDE_BRIDGE_PASS"); v != "" {
+		return v
+	}
 	if v := os.Getenv("HYDROXIDE_BRIDGE_PASS"); v != "" {
+		return v
+	}
+	return ""
+}
+
+func askBridgePass() (string, error) {
+	if v := getBridgePassEnv(); v != "" {
 		return v, nil
 	}
 	b, err := askPass("Bridge password")
@@ -372,7 +382,9 @@ func main() {
 
 		var loginPassword string
 		if a == nil {
-			if pass, err := askPass("Password"); err != nil {
+			if v := os.Getenv("FERROXIDE_PASS"); v != "" {
+				loginPassword = v
+			} else if pass, err := askPass("Password"); err != nil {
 				log.Fatal(err)
 			} else {
 				loginPassword = string(pass)
@@ -393,10 +405,15 @@ func main() {
 					log.Fatal("Only TOTP is supported as a 2FA method")
 				}
 
-				scanner := bufio.NewScanner(os.Stdin)
-				fmt.Printf("2FA TOTP code: ")
-				scanner.Scan()
-				code := scanner.Text()
+				var code string
+				if v := os.Getenv("FERROXIDE_2FA"); v != "" {
+					code = v
+				} else {
+					scanner := bufio.NewScanner(os.Stdin)
+					fmt.Printf("2FA TOTP code: ")
+					scanner.Scan()
+					code = scanner.Text()
+				}
 
 				scope, err := c.AuthTOTP(code)
 				if err != nil {
@@ -432,9 +449,18 @@ func main() {
 			log.Fatal(err)
 		}
 
-		secretKey, bridgePassword, err := auth.GeneratePassword()
-		if err != nil {
-			log.Fatal(err)
+		var secretKey *[32]byte
+		var bridgePassword string
+		if v := getBridgePassEnv(); v != "" {
+			secretKey = auth.DeriveKey(v)
+			bridgePassword = v
+			log.Println("WARNING: Using custom bridge password from environment variable. This may reduce security.")
+		} else {
+			var err error
+			secretKey, bridgePassword, err = auth.GeneratePassword()
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		err = auth.EncryptAndSave(&auth.CachedAuth{
