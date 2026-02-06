@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -123,25 +124,34 @@ func toIcalCalendar(event *protonmail.CalendarEvent, userKr openpgp.KeyRing, cal
 }
 
 func getCalendarObject(b *backend, calId string, calKr openpgp.KeyRing, event *protonmail.CalendarEvent, settings protonmail.CalendarSettings) (*caldav.CalendarObject, error) {
-	userKr, exists := b.keyCache[event.Author]
-	if !exists {
-		userKeys, err := b.c.GetPublicKeys(event.Author)
-		if err != nil {
-			return nil, fmt.Errorf("caldav/getCalendarObject: could not get public keys for author %s: (%w)", event.Author, err)
-		}
+	var userKr openpgp.EntityList
 
-		for _, userKey := range userKeys.Keys {
-			userKeyEntity, err := userKey.Entity()
+	// Handle empty author (e.g., birthday calendars, imported events)
+	// Fall back to user's own keys for signature verification
+	if event.Author == "" {
+		userKr = b.privateKeys
+	} else {
+		var exists bool
+		userKr, exists = b.keyCache[event.Author]
+		if !exists {
+			userKeys, err := b.c.GetPublicKeys(event.Author)
 			if err != nil {
-				return nil, fmt.Errorf("caldav/getCalendarObject: error converting user key entity: (%w)", err)
+				return nil, fmt.Errorf("caldav/getCalendarObject: could not get public keys for author %s: (%w)", event.Author, err)
 			}
 
-			userKr = append(userKr, userKeyEntity)
-		}
+			for _, userKey := range userKeys.Keys {
+				userKeyEntity, err := userKey.Entity()
+				if err != nil {
+					return nil, fmt.Errorf("caldav/getCalendarObject: error converting user key entity: (%w)", err)
+				}
 
-		b.locker.Lock()
-		b.keyCache[event.Author] = userKr
-		b.locker.Unlock()
+				userKr = append(userKr, userKeyEntity)
+			}
+
+			b.locker.Lock()
+			b.keyCache[event.Author] = userKr
+			b.locker.Unlock()
+		}
 	}
 
 	if event.Notifications == nil {
@@ -189,16 +199,22 @@ func (b *backend) ListCalendars(ctx context.Context) ([]caldav.Calendar, error) 
 		return nil, fmt.Errorf("caldav/ListCalendars: error listing ProtonMail calendars: (%w)", err)
 	}
 
-	cals := make([]caldav.Calendar, len(protonCals))
 	homeSetPath, err := b.CalendarHomeSetPath(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("caldav/ListCalendars: error getting calendar home set path: (%w)", err)
 	}
 
-	for i, cal := range protonCals {
+	var cals []caldav.Calendar
+	for _, cal := range protonCals {
 		calView, err := protonmail.FindMemberViewFromKeyring(cal.Members, b.privateKeys)
 		if err != nil {
-			return nil, fmt.Errorf("caldav/ListCalendars: error finding member view for calendar %s: (%w)", cal.ID, err)
+			continue // Skip calendars we don't have access to
+		}
+
+		// Skip special calendars that lack proper encryption/author info
+		name := strings.ToLower(calView.Name)
+		if strings.Contains(name, "birthday") || strings.Contains(name, "holiday") {
+			continue
 		}
 
 		caldavCal := caldav.Calendar{
@@ -206,7 +222,7 @@ func (b *backend) ListCalendars(ctx context.Context) ([]caldav.Calendar, error) 
 			Name:        calView.Name,
 			Description: calView.Description,
 		}
-		cals[i] = caldavCal
+		cals = append(cals, caldavCal)
 	}
 	return cals, nil
 }
@@ -232,6 +248,11 @@ func (b *backend) GetCalendar(ctx context.Context, path string) (*caldav.Calenda
 		calView, err := protonmail.FindMemberViewFromKeyring(cal.Members, b.privateKeys)
 		if err != nil {
 			return nil, fmt.Errorf("caldav/GetCalendar: error finding member view for calendar %s: (%w)", cal.ID, err)
+		}
+
+		name := strings.ToLower(calView.Name)
+		if strings.Contains(name, "birthday") || strings.Contains(name, "holiday") {
+			return nil, fmt.Errorf("caldav/GetCalendar: calendar %s is a special calendar and not supported", calView.Name)
 		}
 
 		caldavCal := caldav.Calendar{
@@ -294,27 +315,30 @@ func (b *backend) ListCalendarObjects(ctx context.Context, path string, req *cal
 
 	events, err := b.c.ListCalendarEvents(calId, nil)
 	if err != nil {
+		log.Printf("caldav/ListCalendarObjects: error listing calendar events for calId %s: %v", calId, err)
 		return nil, fmt.Errorf("caldav/ListCalendarObjects: error listing calendar events for calId %s: (%w)", calId, err)
 	}
 
 	bootstrap, err := b.c.BootstrapCalendar(calId)
 	if err != nil {
+		log.Printf("caldav/ListCalendarObjects: error bootstrapping calendar (calId: %s): %v", calId, err)
 		return nil, fmt.Errorf("caldav/ListCalendarObjects: error bootstrapping calendar (calId: %s): (%w)", calId, err)
 	}
 
 	calKr, err := bootstrap.DecryptKeyring(b.privateKeys)
 	if err != nil {
+		log.Printf("caldav/ListCalendarObjects: error decrypting keyring: %v", err)
 		return nil, fmt.Errorf("caldav/ListCalendarObjects: error decrypting keyring: (%w)", err)
 	}
 
-	cos := make([]caldav.CalendarObject, len(events))
+	var cos []caldav.CalendarObject
 	for i, event := range events {
 		co, err := getCalendarObject(b, calId, calKr, event, bootstrap.CalendarSettings)
 		if err != nil {
-			return nil, fmt.Errorf("caldav/ListCalendarObjects: error creating calendar object for event %d: (%w)", i, err)
+			log.Printf("caldav/ListCalendarObjects: skipping event %d (ID: %s) due to error: %v", i, event.ID, err)
+			continue
 		}
-
-		cos[i] = *co
+		cos = append(cos, *co)
 	}
 
 	return cos, nil
@@ -398,6 +422,7 @@ func (b *backend) PutCalendarObject(ctx context.Context, path string, calendar *
 
 	newEvent, err := b.c.UpdateCalendarEvent(calId, evtId, event, b.privateKeys)
 	if err != nil {
+		log.Printf("caldav/PutCalendarObject: failed (calId: %s, evtId: %s): %v", calId, evtId, err)
 		return nil, fmt.Errorf("caldav/PutCalendarObject: error updating calendar event (calId: %s, evtId: %s): (%w)", calId, evtId, err)
 	}
 

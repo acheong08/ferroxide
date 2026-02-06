@@ -3,6 +3,7 @@ package protonmail
 import (
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -135,7 +136,7 @@ func (t CalendarEventCardType) Signed() bool {
 
 func (t CalendarEventCardType) Encrypted() bool {
 	switch t {
-	case CalendarEventCardEncryptedAndSigned:
+	case CalendarEventCardEncrypted, CalendarEventCardEncryptedAndSigned:
 		return true
 	default:
 		return false
@@ -351,7 +352,7 @@ type CalendarEventFilter struct {
 	Page, PageSize int
 }
 
-func (c *Client) ListCalendarEvents(calendarID string, filter *CalendarEventFilter) ([]*CalendarEvent, error) {
+func (c *Client) listCalendarEventsPage(calendarID string, filter *CalendarEventFilter) ([]*CalendarEvent, error) {
 	v := url.Values{}
 
 	if filter != nil {
@@ -378,6 +379,30 @@ func (c *Client) ListCalendarEvents(calendarID string, filter *CalendarEventFilt
 	}
 
 	return respData.Events, nil
+}
+
+func (c *Client) ListCalendarEvents(calendarID string, filter *CalendarEventFilter) ([]*CalendarEvent, error) {
+	const pageSize = 100
+	var allEvents []*CalendarEvent
+
+	if filter == nil {
+		filter = &CalendarEventFilter{}
+	}
+	filter.PageSize = pageSize
+
+	for page := 0; ; page++ {
+		filter.Page = page
+		events, err := c.listCalendarEventsPage(calendarID, filter)
+		if err != nil {
+			return nil, err
+		}
+		allEvents = append(allEvents, events...)
+		if len(events) < pageSize {
+			break
+		}
+	}
+
+	return allEvents, nil
 }
 
 func (c *Client) GetCalendarEvent(calendarID string, eventID string) (*CalendarEvent, error) {
@@ -891,7 +916,8 @@ func makeUpdateData(c *Client, calID string, oldEvent *CalendarEvent, event ical
 func (c *Client) UpdateCalendarEvent(calID string, eventID string, event ical.Event, userKr openpgp.KeyRing) (*CalendarEvent, error) {
 	oldEvent, err := c.GetCalendarEvent(calID, eventID)
 	isCreate := false
-	if apiErr, ok := err.(*APIError); ok && apiErr.Code == 2061 {
+	var apiErr *APIError
+	if errors.As(err, &apiErr) && apiErr.Code == 2061 {
 		isCreate = true
 	} else if err != nil {
 		return nil, fmt.Errorf("UpdateCalendarEvent: could not get old calendar event: (%w)", err)
